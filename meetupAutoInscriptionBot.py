@@ -5,18 +5,19 @@ import requests
 from pprint import pprint
 import configparser
 import sys
+import time
 
 API_URL_BASE = 'https://api.meetup.com/'
 MY_API_KEY = None
 MY_MEMBER_ID = None
 GROUPS = None
+SECOND_TIMER = 60 * 5
 
 def decode_response(response):
-    #if response.status_code == 200:
-    #    return json.loads(response.content.decode('utf-8'))
-    #else:
-    #    return None
-    return json.loads(response.content.decode('utf-8'))
+    if response.status_code in (200, 201):
+        return json.loads(response.content.decode('utf-8'))
+    else:
+        return None
 
 def get_request(url):
     response = requests.get(url)
@@ -43,7 +44,8 @@ def member_already_subscribe(group, event_id, member_id):
     return subscriber
 
 def subscribe_to_event(group, event_id, response='yes'):
-    return post_request("{0}{1}/events/{2}?&key={3}&response={4}".format(API_URL_BASE, group, event_id, MY_API_KEY, response))
+    url="{0}{1}/events/{2}/rsvps?&key={3}&response={4}".format(API_URL_BASE, group, event_id, MY_API_KEY, response)
+    return post_request(url)
 
 
 def main():
@@ -68,7 +70,7 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read('./meetupAutoInscriptionBot.ini')
     if 'secret' in config:
-            API_KEY = config['secret']['MY_API_KEY']
+            MY_API_KEY = config['secret']['MY_API_KEY']
             MY_MEMBER_ID = config['secret']['MY_MEMBER_ID']
     else:
             print('Rubrique "secret" non trouvée.')
@@ -80,4 +82,10 @@ if __name__ == "__main__":
             print('Rubrique "groups" non trouvée.')
             sys.exit(1)
 
-    main()
+    while True:
+            try:
+                    main()
+            except:
+                    pass
+            finally:
+                    time.sleep(SECOND_TIMER)
